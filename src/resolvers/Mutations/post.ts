@@ -19,8 +19,19 @@ export const postResolvers = {
   postCreate: async (
     _parent: any,
     { post }: PostArgs,
-    { prisma }: Context
+    { prisma, userInfo }: Context
   ): Promise<PostPayloadType> => {
+    if (!userInfo) {
+      return {
+        userErrors: [
+          {
+            message: 'You must be logged in to create a post.',
+          },
+        ],
+        post: null,
+      };
+    }
+
     const { title, content } = post;
     if (!title || !content) {
       return {
@@ -39,7 +50,7 @@ export const postResolvers = {
         data: {
           title,
           content,
-          authorId: 'cl4ngv7680117c9g0e1t9copg',
+          authorId: userInfo.userId,
         },
       }),
     };
