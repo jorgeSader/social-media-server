@@ -1,5 +1,6 @@
 import { Post, Prisma } from '@prisma/client';
 import { Context } from '../../server';
+import { canUserMutatePost } from '../../utils/canUserMutatePost';
 
 interface PostArgs {
   post: {
@@ -59,8 +60,27 @@ export const postResolvers = {
   postUpdate: async (
     _parent: any,
     { post, postId }: { postId: string; post: PostArgs['post'] },
-    { prisma }: Context
+    { prisma, userInfo }: Context
   ): Promise<PostPayloadType> => {
+    if (!userInfo) {
+      return {
+        userErrors: [
+          {
+            message: 'You must be logged in to update a post.',
+          },
+        ],
+        post: null,
+      };
+    }
+
+    const error = await canUserMutatePost({
+      userId: userInfo.userId,
+      postId: postId,
+      prisma,
+    });
+
+    if (error) return error;
+
     const { title, content } = post;
     if (!title && !content) {
       return {
@@ -116,7 +136,7 @@ export const postResolvers = {
   postDelete: async (
     _parent: any,
     { postId }: { postId: string },
-    { prisma }: Context
+    { prisma, userInfo }: Context
   ): Promise<PostPayloadType> => {
     const existingPost = await prisma.post.findUnique({
       where: {
@@ -133,6 +153,25 @@ export const postResolvers = {
         post: null,
       };
     }
+
+    if (!userInfo) {
+      return {
+        userErrors: [
+          {
+            message: 'You must be logged in to update a post.',
+          },
+        ],
+        post: null,
+      };
+    }
+
+    const error = await canUserMutatePost({
+      userId: userInfo.userId,
+      postId: postId,
+      prisma,
+    });
+
+    if (error) return error;
 
     return {
       userErrors: [],
