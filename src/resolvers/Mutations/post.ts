@@ -182,4 +182,110 @@ export const postResolvers = {
       }),
     };
   },
+
+  postPublish: async (
+    _parent: any,
+    { postId }: { postId: string },
+    { prisma, userInfo }: Context
+  ): Promise<PostPayloadType> => {
+    const existingPost = await prisma.post.findUnique({
+      where: {
+        id: postId,
+      },
+    });
+    if (!existingPost) {
+      return {
+        userErrors: [
+          {
+            message: 'Post not found!',
+          },
+        ],
+        post: null,
+      };
+    }
+
+    if (!userInfo) {
+      return {
+        userErrors: [
+          {
+            message: 'You must be logged in to update a post.',
+          },
+        ],
+        post: null,
+      };
+    }
+
+    const error = await canUserMutatePost({
+      userId: userInfo.userId,
+      postId: postId,
+      prisma,
+    });
+
+    if (error) return error;
+
+    return {
+      userErrors: [],
+      post: prisma.post.update({
+        where: {
+          id: postId,
+        },
+        data: {
+          published: true,
+        },
+      }),
+    };
+  },
+
+  postUnpublish: async (
+    _parent: any,
+    { postId }: { postId: string },
+    { prisma, userInfo }: Context
+  ): Promise<PostPayloadType> => {
+    const existingPost = await prisma.post.findUnique({
+      where: {
+        id: postId,
+      },
+    });
+    if (!existingPost) {
+      return {
+        userErrors: [
+          {
+            message: 'Post not found!',
+          },
+        ],
+        post: null,
+      };
+    }
+
+    if (!userInfo) {
+      return {
+        userErrors: [
+          {
+            message: 'You must be logged in to update a post.',
+          },
+        ],
+        post: null,
+      };
+    }
+
+    const error = await canUserMutatePost({
+      userId: userInfo.userId,
+      postId: postId,
+      prisma,
+    });
+
+    if (error) return error;
+
+    return {
+      userErrors: [],
+      post: prisma.post.update({
+        where: {
+          id: postId,
+        },
+        data: {
+          published: false,
+        },
+      }),
+    };
+  },
 };
